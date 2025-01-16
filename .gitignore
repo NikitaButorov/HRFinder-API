@@ -1,0 +1,20 @@
+.env 
+
+# Python virtual environment
+venv/
+
+# Python package metadata
+*.egg-info/
+*.egg
+
+# PyCharm IDE files
+.idea/
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+dist/
+build/ 
