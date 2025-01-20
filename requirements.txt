@@ -1,0 +1,7 @@
+fastapi>=0.68.0
+uvicorn>=0.15.0
+motor>=2.5.0
+beanie>=1.11.0
+fastapi-users[beanie]>=10.0.0
+passlib[bcrypt]>=1.7.4
+bcrypt>=4.0.0 

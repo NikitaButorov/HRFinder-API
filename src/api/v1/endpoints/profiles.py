@@ -1,7 +1,8 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from typing import List, Optional
 from src.models import Profile, ProfileBrief, ProfileWithTitle, PaginatedResponse
 from src.services import ProfileService
+from src.core.auth import get_admin_user, get_regular_user
 
 router = APIRouter(prefix="/profiles", tags=["profiles"])
 profile_service = ProfileService()
@@ -184,3 +185,11 @@ async def get_skills_distribution(
         page=page,
         size=size
     )
+
+@router.get("/admin-endpoint", dependencies=[Depends(get_admin_user)])
+async def admin_endpoint():
+    return {"message": "Admin only"}
+
+@router.get("/user-endpoint", dependencies=[Depends(get_regular_user)])
+async def user_endpoint():
+    return {"message": "Authorized users only"}
