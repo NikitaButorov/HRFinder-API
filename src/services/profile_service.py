@@ -63,6 +63,7 @@ class ProfileService:
         min_years: Optional[int] = None,
         max_years: Optional[int] = None,
         skills: Optional[List[str]] = None,
+        sort_by_experience: Optional[str] = None,
         page: int = 1,
         size: int = 10
     ) -> PaginatedResponse[ProfileBrief]:
@@ -74,6 +75,7 @@ class ProfileService:
             min_years: Минимальный опыт работы в годах (опционально)
             max_years: Максимальный опыт работы в годах (опционально)
             skills: Список требуемых навыков (опционально)
+            sort_by_experience: Сортировка по опыту работы: 'asc' - по возрастанию, 'desc' - по убыванию (опционально)
             page: Номер страницы
             size: Размер страницы
         """
@@ -83,6 +85,7 @@ class ProfileService:
             min_years=min_years,
             max_years=max_years,
             skills=skills,
+            sort_by_experience=sort_by_experience,
             skip=skip,
             limit=size
         )
@@ -165,6 +168,7 @@ class ProfileService:
     async def get_skills_distribution(
         self, 
         country: Optional[str] = None,
+        skills: Optional[List[str]] = None,
         page: int = 1,
         size: int = 10
     ) -> PaginatedResponse[dict]:
@@ -173,17 +177,14 @@ class ProfileService:
         
         Args:
             country: Опциональный фильтр по стране
-            page: Номер страницы (начиная с 1)
-            size: Количество элементов на странице
-            
-        Returns:
-            PaginatedResponse с элементами:
-            - skill: название навыка
-            - count: количество упоминаний
+            skills: Опциональный фильтр по списку навыков
+            page: Номер страницы
+            size: Размер страницы
         """
         skip = (page - 1) * size
         items, total = await self._repository.get_skills_distribution(
             country=country,
+            skills=skills,
             skip=skip,
             limit=size
         )

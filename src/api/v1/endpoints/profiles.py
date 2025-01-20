@@ -74,6 +74,7 @@ async def search_profiles_by_experience(
     min_years: Optional[int] = Query(None, ge=0, description="Минимальный опыт работы в годах"),
     max_years: Optional[int] = Query(None, ge=0, description="Максимальный опыт работы в годах"),
     skills: Optional[List[str]] = Query(None, description="Список требуемых навыков"),
+    sort_by_experience: Optional[str] = Query(None, description="Сортировка по опыту работы: 'asc' - по возрастанию, 'desc' - по убыванию"),
     page: int = Query(1, ge=1, description="Номер страницы"),
     size: int = Query(10, ge=1, le=100, description="Количество элементов на странице")
 ):
@@ -83,6 +84,7 @@ async def search_profiles_by_experience(
     - **min_years**: Минимальный опыт работы в годах (опционально)
     - **max_years**: Максимальный опыт работы в годах (опционально)
     - **skills**: Список требуемых навыков (опционально)
+    - **sort_by_experience**: Сортировка по опыту работы: 'asc' - по возрастанию, 'desc' - по убыванию (опционально)
     - **page**: Номер страницы (начиная с 1)
     - **size**: Количество элементов на странице (от 1 до 100)
     """
@@ -91,6 +93,7 @@ async def search_profiles_by_experience(
         min_years=min_years,
         max_years=max_years,
         skills=skills,
+        sort_by_experience=sort_by_experience,
         page=page,
         size=size
     )
@@ -164,17 +167,20 @@ async def check_profiles_skills(
 @router.get("/analytics/skills-distribution", response_model=PaginatedResponse[dict])
 async def get_skills_distribution(
     country: Optional[str] = None,
+    skills: Optional[List[str]] = Query(None, description="Фильтр по списку навыков"),
     page: int = Query(1, ge=1, description="Номер страницы"),
     size: int = Query(10, ge=1, le=100, description="Количество элементов на странице")
 ):
     """
     Получить статистику по распространенности навыков с пагинацией
     - **country**: Опциональный фильтр по стране
+    - **skills**: Опциональный фильтр по списку навыков
     - **page**: Номер страницы (начиная с 1)
     - **size**: Количество элементов на странице (от 1 до 100)
     """
     return await profile_service.get_skills_distribution(
         country=country,
+        skills=skills,
         page=page,
         size=size
     )

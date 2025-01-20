@@ -88,6 +88,7 @@ class ProfileRepository:
         min_years: Optional[int] = None,
         max_years: Optional[int] = None,
         skills: Optional[List[str]] = None,
+        sort_by_experience: Optional[str] = None,
         skip: int = 0,
         limit: int = 10
     ) -> tuple[List[ProfileBrief], int]:
@@ -99,6 +100,7 @@ class ProfileRepository:
             min_years: Минимальный опыт работы в годах (опционально)
             max_years: Максимальный опыт работы в годах (опционально)
             skills: Список требуемых навыков (опционально)
+            sort_by_experience: Сортировка по опыту работы: 'asc' - по возрастанию, 'desc' - по убыванию (опционально)
             skip: Количество пропускаемых документов
             limit: Максимальное количество возвращаемых документов
         """
@@ -172,10 +174,12 @@ class ProfileRepository:
             }
         })
         
-        # Сортировка по опыту
-        pipeline.append({
-            '$sort': {'total_experience': -1}
-        })
+        # Добавляем сортировку по опыту работы, если указана
+        if sort_by_experience:
+            sort_direction = 1 if sort_by_experience.lower() == 'asc' else -1
+            pipeline.append({
+                '$sort': {'total_experience': sort_direction}
+            })
         
         # Получаем общее количество
         count_pipeline = pipeline.copy()
@@ -358,10 +362,19 @@ class ProfileRepository:
     async def get_skills_distribution(
         self, 
         country: Optional[str] = None,
+        skills: Optional[List[str]] = None,
         skip: int = 0,
         limit: int = 10
     ) -> tuple[List[dict], int]:
-        """Получить статистику по распространенности навыков с пагинацией"""
+        """
+        Получить статистику по распространенности навыков с пагинацией
+        
+        Args:
+            country: Опциональный фильтр по стране
+            skills: Опциональный фильтр по списку навыков
+            skip: Количество пропускаемых документов
+            limit: Максимальное количество возвращаемых документов
+        """
         pipeline = []
         
         # Добавляем фильтр по стране, если указан
@@ -371,6 +384,15 @@ class ProfileRepository:
         # Основной пайплайн для подсчета навыков
         pipeline.extend([
             {'$unwind': '$skills'},
+            # Добавляем фильтр по списку навыков, если указан
+            *([{
+                '$match': {
+                    '$or': [
+                        {'skills': {'$regex': skill, '$options': 'i'}} 
+                        for skill in skills
+                    ]
+                }
+            }] if skills else []),
             {'$group': {
                 '_id': '$skills',
                 'count': {'$sum': 1}
