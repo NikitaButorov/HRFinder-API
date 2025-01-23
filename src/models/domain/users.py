@@ -90,7 +90,7 @@ class User(BeanieBaseUser, Document):
         ]
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "email": "user@example.com",
                 "role": UserRole.USER,

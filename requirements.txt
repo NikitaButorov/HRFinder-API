@@ -1,7 +1,10 @@
-fastapi>=0.68.0
-uvicorn>=0.15.0
-motor>=2.5.0
-beanie>=1.11.0
-fastapi-users[beanie]>=10.0.0
+fastapi>=0.104.0
+uvicorn>=0.24.0
+motor>=3.3.1
+beanie>=1.23.0
+fastapi-users[beanie]>=12.1.2
+pydantic>=2.4.2
+pydantic-settings>=2.0.3
 passlib[bcrypt]>=1.7.4
-bcrypt>=4.0.0 
+python-jose[cryptography]>=3.3.0
+python-multipart>=0.0.6 

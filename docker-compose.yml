@@ -1,0 +1,28 @@
+services:
+  nginx:
+    image: nginx:latest
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api
+    networks:
+      - hr-finder-network
+
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - MONGODB_URL=mongodb+srv://admin:admin@hrfinder.rt8ed.mongodb.net/HRFinder
+      - MONGODB_DB_NAME=HRFinder
+    networks:
+      - hr-finder-network
+
+networks:
+  hr-finder-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:

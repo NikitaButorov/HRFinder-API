@@ -5,11 +5,11 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from passlib.context import CryptContext
 from pymongo.errors import DuplicateKeyError
 
-from api.v1.endpoints import profiles, auth, users
-from core.database import Database
-from core.config import get_settings
-from models.domain.users import User, UserRole
-from core.auth import current_active_user, get_user_manager, create_user_manager
+from .api.v1.endpoints import profiles, auth, users
+from src.core.database import Database
+from src.core.config import get_settings
+from src.models.domain.users import User, UserRole
+from src.core.auth import current_active_user, get_user_manager, create_user_manager
 
 settings = get_settings()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

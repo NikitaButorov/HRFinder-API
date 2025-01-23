@@ -1,7 +1,7 @@
 from typing import List, Optional
-from models.domain.profiles import Profile, ProfileBrief, ProfileWithTitle
-from repositories.profile_repository import ProfileRepository
-from models.domain.pagination import PaginatedResponse
+from src.models.domain.profiles import Profile, ProfileBrief, ProfileWithTitle
+from src.repositories import ProfileRepository
+from src.models.domain.pagination import PaginatedResponse
 
 class ProfileService:
     def __init__(self):

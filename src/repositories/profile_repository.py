@@ -1,7 +1,7 @@
 from typing import List, Optional
 from datetime import datetime
-from models.domain.profiles import Profile, ProfileBrief, ProfileWithTitle
-from core.database import Database
+from src.models.domain.profiles import Profile, ProfileBrief, ProfileWithTitle
+from src.core.database import Database
 
 class ProfileRepository:
     def __init__(self):

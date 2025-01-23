@@ -9,8 +9,8 @@ from fastapi_users.authentication import (
 from fastapi_users.db import BeanieUserDatabase
 from bson import ObjectId
 
-from models.domain.users import User, UserRole, UserCreate
-from core.config import get_settings
+from src.models.domain.users import User, UserRole, UserCreate
+from src.core.config import get_settings
 
 settings = get_settings()
 

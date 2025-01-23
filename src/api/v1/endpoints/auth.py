@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
-from models.domain.users import UserRead, UserCreate, UserUpdate
-from core.auth import auth_backend, fastapi_users, get_user_manager
+from src.models.domain.users import UserRead, UserCreate, UserUpdate
+from src.core.auth import auth_backend, fastapi_users, get_user_manager
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
