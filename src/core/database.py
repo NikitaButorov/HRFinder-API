@@ -1,15 +1,16 @@
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from src.core.config import get_settings
+from typing import Optional
 
 settings = get_settings()
 
 class Database:
-    client: AsyncIOMotorClient = None
-    db: AsyncIOMotorDatabase = None
+    client: Optional[AsyncIOMotorClient] = None
+    db: Optional[AsyncIOMotorDatabase] = None
 
     @classmethod
     def connect_to_database(cls):
-        """Подключение к базе данных"""
+        """Connect to MongoDB database."""
         if not cls.client:
             cls.client = AsyncIOMotorClient(settings.MONGODB_URL)
             cls.db = cls.client[settings.MONGODB_DB_NAME]

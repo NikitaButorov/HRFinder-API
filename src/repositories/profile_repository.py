@@ -5,8 +5,15 @@ from src.core.database import Database
 
 class ProfileRepository:
     def __init__(self):
-        Database.connect_to_database()
-        self.collection = Database.db["profiles"]
+        self._db = None
+        self._collection = None
+
+    async def _get_collection(self):
+        """Получение коллекции с ленивой инициализацией"""
+        if self._collection is None:
+            self._db = await Database.get_db()
+            self._collection = self._db["profiles"]
+        return self._collection
 
     def _convert_dates(self, profile: dict) -> dict:
         """Конвертирует даты из MongoDB формата в datetime"""
@@ -21,7 +28,8 @@ class ProfileRepository:
         return profile
 
     async def find_one(self) -> Optional[Profile]:
-        profile = await self.collection.find_one()
+        collection = await self._get_collection()
+        profile = await collection.find_one()
         if profile:
             profile['_id'] = str(profile['_id'])
             profile = self._convert_dates(profile)
@@ -29,7 +37,8 @@ class ProfileRepository:
         return None
 
     async def find_by_identifier(self, public_identifier: str) -> Optional[Profile]:
-        profile = await self.collection.find_one({"public_identifier": public_identifier})
+        collection = await self._get_collection()
+        profile = await collection.find_one({"public_identifier": public_identifier})
         if profile:
             profile['_id'] = str(profile['_id'])
             profile = self._convert_dates(profile)
@@ -43,20 +52,22 @@ class ProfileRepository:
         skip: int = 0,
         limit: int = 10
     ) -> tuple[List[ProfileBrief], int]:
+        collection = await self._get_collection()
         query = {
             "country_full_name": country,
             "skills": {"$all": skills}
         }
         
         # Получаем общее количество документов
-        total = await self.collection.count_documents(query)
+        total = await collection.count_documents(query)
         
-        # Получаем документы с пагинацией
-        cursor = self.collection.find(
+        # Создаем курсор с пагинацией
+        cursor = collection.find(
             query,
             {"full_name": 1, "public_identifier": 1, "_id": 0}
         ).skip(skip).limit(limit)
         
+        # Получаем результаты
         items = await cursor.to_list(length=None)
         return items, total
 
@@ -67,14 +78,15 @@ class ProfileRepository:
         skip: int = 0,
         limit: int = 10
     ) -> tuple[List[ProfileBrief], int]:
+        collection = await self._get_collection()
         query = {
             "city": city,
             "skills": {"$all": skills}
         }
         
-        total = await self.collection.count_documents(query)
+        total = await collection.count_documents(query)
         
-        cursor = self.collection.find(
+        cursor = collection.find(
             query,
             {"full_name": 1, "public_identifier": 1, "_id": 0}
         ).skip(skip).limit(limit)
@@ -104,6 +116,7 @@ class ProfileRepository:
             skip: Количество пропускаемых документов
             limit: Максимальное количество возвращаемых документов
         """
+        collection = await self._get_collection()
         pipeline = []
         
         # Базовые фильтры
@@ -184,7 +197,7 @@ class ProfileRepository:
         # Получаем общее количество
         count_pipeline = pipeline.copy()
         count_pipeline.append({'$count': 'total'})
-        count_result = await self.collection.aggregate(count_pipeline).to_list(None)
+        count_result = await collection.aggregate(count_pipeline).to_list(None)
         total = count_result[0]['total'] if count_result else 0
         
         # Добавляем пагинацию
@@ -193,7 +206,7 @@ class ProfileRepository:
             {'$limit': limit}
         ])
         
-        items = await self.collection.aggregate(pipeline).to_list(None)
+        items = await collection.aggregate(pipeline).to_list(None)
         return items, total
 
     async def find_by_company(
@@ -202,6 +215,7 @@ class ProfileRepository:
         skip: int = 0,
         limit: int = 10
     ) -> tuple[List[ProfileWithTitle], int]:
+        collection = await self._get_collection()
         base_pipeline = [
             {
                 "$match": {
@@ -226,7 +240,7 @@ class ProfileRepository:
         # Получаем общее количество
         count_pipeline = base_pipeline.copy()
         count_pipeline.append({"$count": "total"})
-        count_result = await self.collection.aggregate(count_pipeline).to_list(length=1)
+        count_result = await collection.aggregate(count_pipeline).to_list(length=1)
         total = count_result[0]["total"] if count_result else 0
 
         # Добавляем пагинацию и финальную проекцию
@@ -242,7 +256,7 @@ class ProfileRepository:
             }
         ]
 
-        items = await self.collection.aggregate(pipeline).to_list(length=None)
+        items = await collection.aggregate(pipeline).to_list(length=None)
         return items, total
 
     async def advanced_search(
@@ -251,6 +265,7 @@ class ProfileRepository:
         limit: int = 10,
         **filters
     ) -> tuple[List[ProfileBrief], int]:
+        collection = await self._get_collection()
         query = {}
         
         if filters.get('countries'):
@@ -301,7 +316,7 @@ class ProfileRepository:
             # Получаем общее количество
             count_pipeline = pipeline.copy()
             count_pipeline.append({'$count': 'total'})
-            count_result = await self.collection.aggregate(count_pipeline).to_list(length=1)
+            count_result = await collection.aggregate(count_pipeline).to_list(length=1)
             total = count_result[0]['total'] if count_result else 0
             
             # Добавляем пагинацию
@@ -317,13 +332,13 @@ class ProfileRepository:
                 }
             ])
             
-            items = await self.collection.aggregate(pipeline).to_list(length=None)
+            items = await collection.aggregate(pipeline).to_list(length=None)
             return items, total
         
         # Если нет фильтров по опыту, используем простой поиск
-        total = await self.collection.count_documents(query)
+        total = await collection.count_documents(query)
         
-        cursor = self.collection.find(
+        cursor = collection.find(
             query,
             {'full_name': 1, 'public_identifier': 1, '_id': 0}
         ).skip(skip).limit(limit)
@@ -336,6 +351,7 @@ class ProfileRepository:
         public_identifiers: List[str],
         required_skills: List[str]
     ) -> List[dict]:
+        collection = await self._get_collection()
         pipeline = [
             {
                 "$match": {
@@ -357,7 +373,7 @@ class ProfileRepository:
             }
         ]
         
-        return await self.collection.aggregate(pipeline).to_list(None)
+        return await collection.aggregate(pipeline).to_list(None)
 
     async def get_skills_distribution(
         self, 
@@ -375,6 +391,7 @@ class ProfileRepository:
             skip: Количество пропускаемых документов
             limit: Максимальное количество возвращаемых документов
         """
+        collection = await self._get_collection()
         pipeline = []
         
         # Добавляем фильтр по стране, если указан
@@ -408,7 +425,7 @@ class ProfileRepository:
         # Получаем общее количество уникальных навыков
         count_pipeline = pipeline.copy()
         count_pipeline.append({'$count': 'total'})
-        count_result = await self.collection.aggregate(count_pipeline).to_list(None)
+        count_result = await collection.aggregate(count_pipeline).to_list(None)
         total = count_result[0]['total'] if count_result else 0
         
         # Добавляем пагинацию
@@ -417,5 +434,5 @@ class ProfileRepository:
             {'$limit': limit}
         ])
         
-        items = await self.collection.aggregate(pipeline).to_list(None)
+        items = await collection.aggregate(pipeline).to_list(None)
         return items, total 

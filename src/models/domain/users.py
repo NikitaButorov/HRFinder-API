@@ -35,6 +35,15 @@ class UserRead(CustomBaseUser):
     is_superuser: bool = False
     is_verified: bool = False
 
+    @classmethod
+    def model_validate(cls, obj, *args, **kwargs):
+        if isinstance(obj, User):
+            # Преобразуем ObjectId в строку при сериализации
+            obj_dict = obj.model_dump()
+            obj_dict["id"] = str(obj_dict["id"])
+            return super().model_validate(obj_dict, *args, **kwargs)
+        return super().model_validate(obj, *args, **kwargs)
+
     class Config:
         from_attributes = True
 
@@ -48,10 +57,17 @@ class UserUpdate(schemas.BaseUserUpdate):
     role: Optional[UserRole] = None
 
 class User(BeanieBaseUser, Document):
-    role: UserRole = UserRole.USER
-    email: str
+    email: EmailStr = Field(unique=True, index=True)  # Явно определяем email как поле
+    role: UserRole = Field(default=UserRole.USER)
     hashed_password: str
-    id: ObjectId = Field(default_factory=ObjectId, alias="_id")
+    is_active: bool = True
+    is_verified: bool = False
+    is_superuser: bool = False
+
+    @classmethod
+    async def by_email(cls, email: str):
+        """Поиск пользователя по email"""
+        return await cls.find_one({"email": email})
 
     def __str__(self) -> str:
         """Строковое представление пользователя"""
@@ -73,31 +89,19 @@ class User(BeanieBaseUser, Document):
     class Settings:
         name = "users"
         use_state_management = True
-        email_collation = {
-            'locale': 'en',
-            'strength': 2
-        }
         indexes = [
-            IndexModel(
-                ['email'],
-                unique=True,
-                name="unique_email_index",
-                collation={
-                    'locale': 'en',
-                    'strength': 2
-                }
-            )
+            "email",  # Создаем индекс для email
         ]
 
     class Config:
         json_schema_extra = {
             "example": {
                 "email": "user@example.com",
+                "password": "string",
                 "role": UserRole.USER,
             }
         }
         populate_by_name = True
         arbitrary_types_allowed = True
-        json_encoders = {
-            ObjectId: str
-        } 
+        json_encoders = {ObjectId: str}
+        use_enum_values = True 

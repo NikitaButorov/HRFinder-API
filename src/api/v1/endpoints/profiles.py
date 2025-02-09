@@ -2,13 +2,13 @@ from fastapi import APIRouter, HTTPException, Query, Depends
 from typing import List, Optional
 from src.models import Profile, ProfileBrief, ProfileWithTitle, PaginatedResponse
 from src.services import ProfileService
-from src.core.auth import get_admin_user, get_regular_user
+from src.core.auth import get_admin_user, get_regular_user, fastapi_users
 
 router = APIRouter(prefix="/profiles", tags=["profiles"])
 profile_service = ProfileService()
 
 @router.get("", response_model=Profile)
-async def get_profile():
+async def get_profile(user = Depends(fastapi_users.current_user(active=True))):
     profile = await profile_service.get_profile()
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")

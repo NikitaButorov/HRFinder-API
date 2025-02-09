@@ -1,0 +1,44 @@
+services:
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_test_data:/data/db
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  tests:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - MONGODB_URL=mongodb://mongodb:27017
+      - MONGODB_DB_NAME=hrfinder_test
+      - TESTING=true
+      - SECRET_KEY=test-secret-key
+      - AUTH_SECRET=test-auth-secret
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    networks:
+      - test-network
+    command: >
+      sh -c "
+        echo 'Waiting for MongoDB to be ready...' &&
+        sleep 10 &&
+        pytest -v --asyncio-mode=auto"
+
+networks:
+  test-network:
+    driver: bridge
+
+volumes:
+  mongodb_test_data: 

@@ -1,12 +1,14 @@
 from typing import Optional, Any
 from fastapi import Depends, Request, HTTPException
-from fastapi_users import FastAPIUsers, BaseUserManager
+from fastapi_users import FastAPIUsers, schemas, models, exceptions
 from fastapi_users.authentication import (
     AuthenticationBackend,
     BearerTransport,
     JWTStrategy,
 )
 from fastapi_users.db import BeanieUserDatabase
+from fastapi_users.manager import BaseUserManager, UserManagerDependency
+from beanie import PydanticObjectId
 from bson import ObjectId
 
 from src.models.domain.users import User, UserRole, UserCreate
@@ -15,21 +17,37 @@ from src.core.config import get_settings
 settings = get_settings()
 
 class UserManager(BaseUserManager[User, ObjectId]):
-    reset_password_token_secret = settings.SECRET_KEY
-    verification_token_secret = settings.SECRET_KEY
+    reset_password_token_secret = settings.AUTH_SECRET
+    verification_token_secret = settings.AUTH_SECRET
+    user_db_model = User
+
+    async def create(
+        self,
+        user_create: UserCreate,
+        safe: bool = False,
+        request: Optional[Request] = None
+    ) -> User:
+        """Create a user in database."""
+        await self.validate_password(user_create.password, user_create)
+
+        existing_user = await self.user_db.get_by_email(user_create.email)
+        if existing_user is not None:
+            raise UserAlreadyExists()
+
+        user_dict = (
+            user_create.create_update_dict()
+            if safe
+            else user_create.create_update_dict_superuser()
+        )
+        password = user_dict.pop("password")
+        user_dict["hashed_password"] = self.password_helper.hash(password)
+        user_dict["role"] = UserRole.USER
+
+        created_user = await self.user_db.create(user_dict)
+        return created_user
 
     async def on_after_register(self, user: User, request: Optional[Request] = None):
         print(f"User {user.id} has registered.")
-
-    async def create(self, user_create: UserCreate) -> User:
-        """Переопределяем create чтобы установить роль USER по умолчанию"""
-        # Принудительно устанавливаем роль USER для новых пользователей
-        user_dict = user_create.model_dump()
-        user_dict["role"] = UserRole.USER
-        user_dict["is_superuser"] = False
-        
-        created_user = await super().create(UserCreate(**user_dict))
-        return created_user
 
     def parse_id(self, value: str) -> ObjectId:
         """Преобразует строковый ID в ObjectId"""
@@ -71,11 +89,18 @@ class UserManager(BaseUserManager[User, ObjectId]):
         user = await self.create(user_create)
         return user
 
-async def get_user_db():
-    """Получить базу данных пользователей"""
-    yield BeanieUserDatabase(User)
+class CustomBeanieUserDatabase(BeanieUserDatabase):
+    async def get_by_email(self, email: str) -> Optional[User]:
+        """Получение пользователя по email"""
+        user = await self.user_model.find_one({"email": email})
+        return user
 
-async def get_user_manager(user_db: BeanieUserDatabase = Depends(get_user_db)):
+async def get_user_db():
+    """Get user database."""
+    yield CustomBeanieUserDatabase(User)
+
+async def get_user_manager(user_db=Depends(get_user_db)):
+    """Get user manager."""
     yield UserManager(user_db)
 
 async def create_user_manager():
@@ -85,6 +110,7 @@ async def create_user_manager():
 bearer_transport = BearerTransport(tokenUrl="/api/v1/auth/jwt/login")
 
 def get_jwt_strategy() -> JWTStrategy:
+    """Get JWT strategy."""
     return JWTStrategy(secret=settings.SECRET_KEY, lifetime_seconds=3600)
 
 auth_backend = AuthenticationBackend(
