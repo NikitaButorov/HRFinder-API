@@ -21,14 +21,19 @@ class UserManager(BaseUserManager[User, ObjectId]):
     async def on_after_register(self, user: User, request: Optional[Request] = None):
         print(f"User {user.id} has registered.")
 
-    async def create(self, user_create: UserCreate) -> User:
+    async def create(self, user_create: UserCreate, safe: bool = False, request: Optional[Request] = None) -> User:
         """Переопределяем create чтобы установить роль USER по умолчанию"""
         # Принудительно устанавливаем роль USER для новых пользователей
         user_dict = user_create.model_dump()
         user_dict["role"] = UserRole.USER
         user_dict["is_superuser"] = False
         
-        created_user = await super().create(UserCreate(**user_dict))
+        created_user = await super().create(UserCreate(**user_dict), safe=safe, request=request)
+        
+        # Преобразуем ObjectId в строку
+        if hasattr(created_user, 'id') and isinstance(created_user.id, ObjectId):
+            created_user.id = str(created_user.id)
+            
         return created_user
 
     def parse_id(self, value: str) -> ObjectId:
@@ -68,7 +73,7 @@ class UserManager(BaseUserManager[User, ObjectId]):
             return existing_user
             
         # Создаем нового пользователя
-        user = await self.create(user_create)
+        user = await self.create(user_create, safe=False)
         return user
 
 async def get_user_db():

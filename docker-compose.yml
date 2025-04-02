@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   nginx:
     image: nginx:latest
@@ -14,11 +16,15 @@ services:
     build: .
     ports:
       - "8000:8000"
+    volumes:
+      - ./:/app
     environment:
       - MONGODB_URL=mongodb+srv://admin:admin@hrfinder.rt8ed.mongodb.net/HRFinder
       - MONGODB_DB_NAME=HRFinder
+      - DEBUG=True
     networks:
       - hr-finder-network
+    restart: always
 
 networks:
   hr-finder-network:

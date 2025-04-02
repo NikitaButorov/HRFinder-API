@@ -4,14 +4,15 @@ FROM python:3.11-slim
 # Устанавливаем рабочую директорию
 WORKDIR /app
 
-# Копируем файлы зависимостей
-COPY requirements.txt .
-
-# Устанавливаем зависимости
-RUN pip install --no-cache-dir -r requirements.txt
+# Копируем файлы зависимостей и настройки проекта
+COPY requirements.txt setup.py ./
 
 # Копируем весь проект
 COPY . .
+
+# Устанавливаем зависимости и сам проект в режиме разработки
+RUN pip install --no-cache-dir -r requirements.txt && \
+    pip install -e .
 
 # Добавляем путь к модулям в PYTHONPATH
 ENV PYTHONPATH=/app
@@ -20,4 +21,4 @@ ENV PYTHONPATH=/app
 EXPOSE 8000
 
 # Запускаем приложение
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"] 
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"] 
