@@ -3,10 +3,17 @@
 
 # Проверяем, запущен ли сервис
 echo "Проверка доступности сервиса на http://localhost:8080..."
-curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/api/v1/docs
+curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/api/v1/auth/users/me
 
 if [ $? -ne 0 ]; then
     echo "Сервис не доступен. Убедитесь, что API запущено через docker-compose."
+    exit 1
+fi
+
+# Проверяем, что ответ 401 (требуется авторизация), что указывает на то, что API работает
+HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/api/v1/auth/users/me)
+if [ "$HTTP_STATUS" != "401" ]; then
+    echo "API не отвечает ожидаемым образом. Код ответа: $HTTP_STATUS"
     exit 1
 fi
 

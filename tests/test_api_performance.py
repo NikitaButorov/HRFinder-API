@@ -7,8 +7,8 @@ from tests.conftest import BASE_URL
 @pytest.mark.performance
 def test_api_response_time():
     """Тест времени отклика API"""
-    # Проверяем время отклика на запрос документации
-    url = f"{BASE_URL}/docs"
+    # Используем эндпоинт авторизации, который должен отвечать с 401 для неавторизованного запроса
+    url = f"{BASE_URL}/auth/users/me"
     
     # Сделаем 5 замеров времени запроса
     response_times = []
@@ -17,7 +17,7 @@ def test_api_response_time():
         response = requests.get(url)
         end_time = time.time()
         
-        assert response.status_code == 200
+        assert response.status_code == 401
         response_times.append(end_time - start_time)
     
     # Рассчитываем среднее время ответа и стандартное отклонение
@@ -37,8 +37,8 @@ def test_api_response_time():
 @pytest.mark.performance
 def test_concurrent_requests():
     """Тест производительности при параллельных запросах"""
-    # Используем простой эндпоинт для тестирования
-    url = f"{BASE_URL}/docs"
+    # Используем эндпоинт авторизации, который должен отвечать с 401 для неавторизованного запроса
+    url = f"{BASE_URL}/auth/users/me"
     
     import concurrent.futures
     
@@ -59,8 +59,8 @@ def test_concurrent_requests():
     response_times = [r[0] for r in results]
     status_codes = [r[1] for r in results]
     
-    # Проверяем, что все запросы успешны
-    assert all(code == 200 for code in status_codes), "Не все запросы вернули успешный статус"
+    # Проверяем, что все запросы возвращают ожидаемый статус
+    assert all(code == 401 for code in status_codes), "Не все запросы вернули ожидаемый статус 401"
     
     # Выводим статистику
     avg_time = mean(response_times)

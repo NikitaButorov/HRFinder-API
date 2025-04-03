@@ -3,10 +3,17 @@ chcp 65001 > nul
 REM Скрипт для запуска тестов в Windows
 
 echo Проверка доступности сервиса на http://localhost:8080...
-curl -s -o nul -w "%%{http_code}" http://localhost:8080/api/v1/docs
+curl -s -o nul -w "%%{http_code}" http://localhost:8080/api/v1/auth/users/me
 
 if %ERRORLEVEL% NEQ 0 (
     echo Сервис не доступен. Убедитесь, что API запущено через docker-compose.
+    exit /b 1
+)
+
+REM Проверяем, что ответ 401 (требуется авторизация), что указывает на то, что API работает
+for /f %%i in ('curl -s -o nul -w "%%{http_code}" http://localhost:8080/api/v1/auth/users/me') do set HTTP_STATUS=%%i
+if NOT "%HTTP_STATUS%"=="401" (
+    echo API не отвечает ожидаемым образом. Код ответа: %HTTP_STATUS%
     exit /b 1
 )
 

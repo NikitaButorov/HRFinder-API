@@ -24,6 +24,8 @@ docker-compose up --build
 3. Доступ к API
 - API будет доступен по адресу: http://localhost:8000
 - Через Nginx: http://localhost:8080
+- Документация API доступна по адресу: http://localhost:8080/docs
+- OpenAPI схема: http://localhost:8080/openapi.json
 
 ### Учетные данные по умолчанию
 - Email: admin@example.com
@@ -95,4 +97,21 @@ chmod +x run_tests.sh
 
 ### Отчет о тестировании
 
-После запуска тестов создается HTML-отчет `report.html` с подробной информацией о результатах тестирования. 
+После запуска тестов создается HTML-отчет `report.html` с подробной информацией о результатах тестирования.
+
+## Важные примечания
+
+### Настройка Nginx
+
+Для корректной работы документации API (Swagger UI) необходимо настроить Nginx для проксирования запросов к `/docs` и `/openapi.json`. Пример конфигурации есть в файле `nginx/nginx.conf`:
+
+```nginx
+location ~ ^/(docs|redoc|openapi.json) {
+    proxy_pass http://fastapi_app;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_read_timeout 300;
+}
+``` 

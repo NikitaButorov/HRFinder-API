@@ -16,8 +16,9 @@ SERVICE_INFO = {
 def is_api_running() -> bool:
     try:
         # Проверяем доступность API через любой доступный без авторизации эндпоинт
-        response = requests.get(f"{BASE_URL}/docs", timeout=2)
-        return response.status_code == 200
+        # auth/users/me всегда вернет 401 для неавторизованного запроса, что подтверждает работу API
+        response = requests.get(f"{BASE_URL}/auth/users/me", timeout=2)
+        return response.status_code == 401
     except requests.RequestException:
         return False
 
