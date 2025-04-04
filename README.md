@@ -132,7 +132,6 @@ run_tests.bat tests/test_api_availability.py
 - `GET /api/v1/profiles/analytics/skills-distribution` — Анализ распределения навыков
 
 ## 🛠️ Структура проекта
-.
 ├── .github/ # Конфигурация GitHub Actions
 ├── nginx/ # Конфигурация Nginx
 ├── src/ # Исходный код
